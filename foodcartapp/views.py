@@ -1,13 +1,12 @@
 import json
 
-from django.http import JsonResponse, HttpResponseRedirect
-from django.shortcuts import render
+from django.http import JsonResponse
 from django.templatetags.static import static
-
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from .models import Product
 from .models import Order
-from .models import OrderItem
 
 
 def banners_list_api(request):
@@ -34,6 +33,7 @@ def banners_list_api(request):
     })
 
 
+@api_view(['GET'])
 def product_list_api(request):
     products = Product.objects.select_related('category').available()
 
@@ -56,19 +56,12 @@ def product_list_api(request):
             }
         }
         dumped_products.append(dumped_product)
-    return JsonResponse(dumped_products, safe=False, json_dumps_params={
-        'ensure_ascii': False,
-        'indent': 4,
-    })
+    return Response(dumped_products)
 
 
-def register_order(request):
-    try:
-        order_raw = json.loads(request.body.decode())
-    except ValueError:
-        return JsonResponse({
-                'error': 'Ошибка при чтении JSON',
-        })
+@api_view(['POST'])
+def register_order_api(request):
+    order_raw = request.data
     order = Order.objects.create(
         firstname=order_raw['firstname'],
         lastname=order_raw['lastname'],
@@ -78,5 +71,3 @@ def register_order(request):
     for product in order_raw['products']:
         order.add_product(product['product'], product['quantity'])
     return JsonResponse({})
-
-
