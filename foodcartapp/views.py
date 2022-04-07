@@ -1,7 +1,6 @@
-import json
-
 from django.http import JsonResponse
 from django.templatetags.static import static
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -62,12 +61,29 @@ def product_list_api(request):
 @api_view(['POST'])
 def register_order_api(request):
     order_raw = request.data
+
+    try:
+        products = order_raw['products']
+    except:
+        content = {'products': "Required field"}
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    if products is None:
+        content = {'products': "This field cannot be empty"}
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+    elif isinstance(products, list) and len(products) == 0:
+        content = {'products': "This list cannot be empty"}
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+    elif isinstance(products, str):
+        content = {'products': "Expected list with values, but received 'str'"}
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
     order = Order.objects.create(
         firstname=order_raw['firstname'],
         lastname=order_raw['lastname'],
         phonenumber=order_raw['phonenumber'],
         address=order_raw['address'],
     )
-    for product in order_raw['products']:
+    for product in products:
         order.add_product(product['product'], product['quantity'])
     return JsonResponse({})
