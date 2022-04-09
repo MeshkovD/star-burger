@@ -71,12 +71,45 @@ def register_order_api(request):
     if products is None:
         content = {'products': "This field cannot be empty"}
         return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-    elif isinstance(products, list) and len(products) == 0:
+    if isinstance(products, list) and len(products) == 0:
         content = {'products': "This list cannot be empty"}
         return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-    elif isinstance(products, str):
+    if isinstance(products, str):
         content = {'products': "Expected list with values, but received 'str'"}
         return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+    if order_raw['products'][0]['product'] not in Product.objects.values_list('id', flat=True):
+        content = {'products': f"Invalid primary key '{order_raw['products'][0]['product']}'"}
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+
+
+    required_fields = ['firstname', 'lastname', 'phonenumber', 'address']
+    missing_fields = []
+    for field in required_fields:
+        try:
+            order_raw[field]
+        except:
+            missing_fields.append(field)
+    if missing_fields:
+        content = {", ".join(missing_fields): "Required field"}
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    null_fields = []
+    for field in required_fields:
+        if order_raw[field] == None or len(order_raw[field]) == 0:
+            null_fields.append(field)
+    if null_fields:
+        content = {", ".join(null_fields): "This field cannot be empty"}
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
+    not_str_fields = []
+    for field in required_fields:
+        if not isinstance(order_raw[field], str):
+            not_str_fields.append(field)
+    if not_str_fields:
+        content = {", ".join(not_str_fields): "Not a valid string"}
+        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
+
 
     order = Order.objects.create(
         firstname=order_raw['firstname'],
