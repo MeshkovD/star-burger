@@ -1,10 +1,11 @@
 from django.http import JsonResponse
 from django.templatetags.static import static
-from rest_framework import status
+from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer
 
-from .models import Product
+from .models import Product, OrderItem
 from .models import Order
 
 
@@ -58,65 +59,33 @@ def product_list_api(request):
     return Response(dumped_products)
 
 
+class ProductsSerializer(ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['product', 'quantity']
+
+
+class OrderSerializer(ModelSerializer):
+    products = ProductsSerializer(many=True, allow_empty=False)
+    phonenumber = PhoneNumberField()
+
+    class Meta:
+        model = Order
+        fields = ['products', 'firstname', 'lastname', 'phonenumber', 'address']
+        # TODO: добавить нормализацию, если номер начинается на 8
+
+
 @api_view(['POST'])
 def register_order_api(request):
-    order_raw = request.data
-
-    try:
-        products = order_raw['products']
-    except:
-        content = {'products': "Required field"}
-        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-
-    if products is None:
-        content = {'products': "This field cannot be empty"}
-        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-    if isinstance(products, list) and len(products) == 0:
-        content = {'products': "This list cannot be empty"}
-        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-    if isinstance(products, str):
-        content = {'products': "Expected list with values, but received 'str'"}
-        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-    if order_raw['products'][0]['product'] not in Product.objects.values_list('id', flat=True):
-        content = {'products': f"Invalid primary key '{order_raw['products'][0]['product']}'"}
-        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-
-
-
-    required_fields = ['firstname', 'lastname', 'phonenumber', 'address']
-    missing_fields = []
-    for field in required_fields:
-        try:
-            order_raw[field]
-        except:
-            missing_fields.append(field)
-    if missing_fields:
-        content = {", ".join(missing_fields): "Required field"}
-        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-
-    null_fields = []
-    for field in required_fields:
-        if order_raw[field] == None or len(order_raw[field]) == 0:
-            null_fields.append(field)
-    if null_fields:
-        content = {", ".join(null_fields): "This field cannot be empty"}
-        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-
-    not_str_fields = []
-    for field in required_fields:
-        if not isinstance(order_raw[field], str):
-            not_str_fields.append(field)
-    if not_str_fields:
-        content = {", ".join(not_str_fields): "Not a valid string"}
-        return Response(content, status=status.HTTP_406_NOT_ACCEPTABLE)
-
+    serializer = OrderSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
 
     order = Order.objects.create(
-        firstname=order_raw['firstname'],
-        lastname=order_raw['lastname'],
-        phonenumber=order_raw['phonenumber'],
-        address=order_raw['address'],
+        firstname=serializer.validated_data['firstname'],
+        lastname=serializer.validated_data['lastname'],
+        phonenumber=serializer.validated_data['phonenumber'],
+        address=serializer.validated_data['address'],
     )
-    for product in products:
-        order.add_product(product['product'], product['quantity'])
+    for product in serializer.validated_data['products']:
+        order.add_product(product['product'].id, product['quantity'])
     return JsonResponse({})
