@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.templatetags.static import static
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework.decorators import api_view
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 
@@ -66,12 +67,12 @@ class ProductsSerializer(ModelSerializer):
 
 
 class OrderSerializer(ModelSerializer):
-    products = ProductsSerializer(many=True, allow_empty=False)
+    products = ProductsSerializer(many=True, allow_empty=False, write_only=True)
     phonenumber = PhoneNumberField()
 
     class Meta:
         model = Order
-        fields = ['products', 'firstname', 'lastname', 'phonenumber', 'address']
+        fields = ['id', 'products', 'firstname', 'lastname', 'phonenumber', 'address']
         # TODO: добавить нормализацию, если номер начинается на 8
 
 
@@ -88,4 +89,5 @@ def register_order_api(request):
     )
     for product in serializer.validated_data['products']:
         order.add_product(product['product'].id, product['quantity'])
-    return JsonResponse({})
+    serializer = OrderSerializer(order)
+    return Response(serializer.data)
