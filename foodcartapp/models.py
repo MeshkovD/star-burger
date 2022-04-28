@@ -166,9 +166,11 @@ class Order(models.Model):
     )
 
     def add_product(self, id, quantity):
+        product = Product.objects.get(id=id)
         OrderItem.objects.create(
-            product=Product.objects.get(id=id),
+            product=product,
             quantity=quantity,
+            price=product.price,
             order=self
         )
 
@@ -204,6 +206,14 @@ class OrderItem(models.Model):
         blank=False,
         null=False
     )
+    price = models.DecimalField(
+        'цена',
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)],
+        blank=False,
+        null=False
+    )
 
     class Meta:
         verbose_name = 'позиция заказа'
@@ -211,3 +221,4 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name}"
+
