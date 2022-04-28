@@ -126,7 +126,7 @@ class RestaurantMenuItem(models.Model):
 
 
 class ExtendedQuerySet(models.QuerySet):
-    def order_cost(self):
+    def order_with_cost(self):
         return Order.objects.all().annotate(
             order_cost=Sum(
                 F('order_items__quantity') * F('order_items__product_id__price')
