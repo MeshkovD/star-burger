@@ -1,8 +1,8 @@
+from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework.decorators import api_view
-from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 
@@ -81,13 +81,14 @@ def register_order_api(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    order = Order.objects.create(
-        firstname=serializer.validated_data['firstname'],
-        lastname=serializer.validated_data['lastname'],
-        phonenumber=serializer.validated_data['phonenumber'],
-        address=serializer.validated_data['address'],
-    )
-    for product in serializer.validated_data['products']:
-        order.add_product(product['product'].id, product['quantity'])
+    with transaction.atomic():
+        order = Order.objects.create(
+            firstname=serializer.validated_data['firstname'],
+            lastname=serializer.validated_data['lastname'],
+            phonenumber=serializer.validated_data['phonenumber'],
+            address=serializer.validated_data['address'],
+        )
+        for product in serializer.validated_data['products']:
+            order.add_product(product['product'].id, product['quantity'])
     serializer = OrderSerializer(order)
     return Response(serializer.data)
