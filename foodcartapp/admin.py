@@ -122,10 +122,23 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [
         OrderItemInline
     ]
+    fields = ['firstname',
+              'lastname',
+              'phonenumber',
+              'address',
+              'status',
+              'comment',
+              'registration_date',
+              'call_date',
+              'delivery_date'
+              ]
+
+    readonly_fields = ['registration_date']
 
     def response_change(self, request, obj):
         res = super(OrderAdmin, self).response_change(request, obj)
-        if url_has_allowed_host_and_scheme(request.GET['next'], settings.ALLOWED_HOSTS):
-            return HttpResponseRedirect(request.GET['next'])
+        if request.GET.get('next'):
+            if url_has_allowed_host_and_scheme(request.GET['next'], settings.ALLOWED_HOSTS):
+                return HttpResponseRedirect(request.GET['next'])
         else:
             return res
