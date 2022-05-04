@@ -127,12 +127,19 @@ class RestaurantMenuItem(models.Model):
 
 class ExtendedQuerySet(models.QuerySet):
     def order_with_cost(self):
-        return Order.objects.all().annotate(
+        return Order.objects.filter(status=RAW).annotate(
             order_cost=Sum(
                 F('order_items__quantity') * F('order_items__product_id__price')
             )
         )
 
+
+RAW = 'RW'
+PROCESSED = 'PR'
+STATUS_CHOICES = [
+    (RAW, 'Необработанный'),
+    (PROCESSED, 'Обработанный'),
+]
 
 class Order(models.Model):
 
@@ -144,7 +151,6 @@ class Order(models.Model):
         blank=False,
         null=False,
     )
-
     lastname = models.CharField(
         'Фамилия',
         max_length=100,
@@ -164,6 +170,10 @@ class Order(models.Model):
         blank=False,
         null=False,
     )
+    status = models.CharField(max_length=2,
+                              choices=STATUS_CHOICES,
+                              default=RAW,
+                              db_index=True)
 
     def add_product(self, id, quantity):
         product = Product.objects.get(id=id)
