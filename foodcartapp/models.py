@@ -174,6 +174,12 @@ class Order(models.Model):
                               choices=STATUS_CHOICES,
                               default=RAW,
                               db_index=True)
+    comment = models.TextField('Комментарий',
+                               max_length=500,
+                               blank=True,
+                               null=True,
+                               default=''
+                               )
 
     def add_product(self, id, quantity):
         product = Product.objects.get(id=id)
