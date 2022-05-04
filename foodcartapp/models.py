@@ -143,6 +143,13 @@ STATUS_CHOICES = [
     (PROCESSED, 'Обработанный'),
 ]
 
+CASH = 'CS'
+ELECTRONIC = 'EL'
+PAYMENT_METHOD_CHOICES = [
+    (CASH, 'Наличностью'),
+    (ELECTRONIC, 'Электронно'),
+]
+
 class Order(models.Model):
 
     objects = ExtendedQuerySet.as_manager()
@@ -199,6 +206,12 @@ class Order(models.Model):
                                          null=True,
                                          db_index=True,
                                          )
+    payment_method = models.CharField('Способ оплаты',
+                                      max_length=2,
+                                      choices=PAYMENT_METHOD_CHOICES,
+                                      default=CASH,
+                                      db_index=True
+                                      )
 
     def add_product(self, id, quantity):
         product = Product.objects.get(id=id)
