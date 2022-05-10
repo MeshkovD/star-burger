@@ -1,4 +1,5 @@
 {% extends 'base_restaurateur_page.html' %}
+{% load foodcartapp_extras %}
 
 {% block title %}Необработанные заказы | Star Burger{% endblock %}
 
@@ -24,18 +25,33 @@
       <th>Ссылка на админку</th>
     </tr>
 
-    {% for item in order_items %}
+    {% for order in orders %}
     <tr>
-      <td>{{item.id}}</td>
-      <td>{{item.get_status_display}}</td>
-      <td>{{item.get_payment_method_display}}</td>
-      <td>{{item.order_cost}} руб.</td>
-      <td>{{item.firstname}} {{item.lastname}}</td>
-      <td>{{item.phonenumber}}</td>
-      <td>{{item.address}}</td>
-      <td>{{item.comment}}</td>
+      <td>{{ order.id }}</td>
+      <td>{{ order.get_status_display }}</td>
+      <td>{{ order.get_payment_method_display }}</td>
+      <td>{{ order.order_cost }} руб.</td>
+      <td>{{ order.firstname }} {{ order.lastname }}</td>
+      <td>{{ order.phonenumber }}</td>
       <td>
-        <a href='{% url "admin:foodcartapp_order_change" object_id=item.id %}?next={{ request.get_full_path|urlencode:"" }}'>
+        <details>
+          <summary>
+            {{ order.address }}
+          </summary>
+          Можно забрать из:<br>
+          {% if suitable_restaurants|get:order.id %}
+          {%for restaurant in suitable_restaurants|get:order.id %}
+          <li>{{ restaurant }}</li>
+          {% endfor %}
+          {% else %}
+          <b>Нет подходящих ресторанов</b>
+          {% endif %}
+        </details>
+      </td>
+      <td>{{ order.comment }}</td>
+      <td>
+        <a
+          href='{% url "admin:foodcartapp_order_change" object_id=order.id %}?next={{ request.get_full_path|urlencode:"" }}'>
           Редактировать
         </a>
       </td>

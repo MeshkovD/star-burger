@@ -33,9 +33,7 @@ class Restaurant(models.Model):
 class ProductQuerySet(models.QuerySet):
     def available(self):
         products = (
-            RestaurantMenuItem.objects
-            .filter(availability=True)
-            .values_list('product')
+            RestaurantMenuItem.objects.filter(availability=True).values_list('product')
         )
         return self.filter(pk__in=products)
 
@@ -128,7 +126,21 @@ class RestaurantMenuItem(models.Model):
 
 
 class ExtendedQuerySet(models.QuerySet):
-    def order_with_cost(self):
+    def get_suitable_restaurants(self):
+        restaurants = {}
+        raw_orders = Order.objects.filter(status=RAW)
+        for order in raw_orders:
+            suitable_restaurants = set(Restaurant.objects.all())
+            for item in order.order_items.all():
+                item_restaurants = set(Restaurant.objects.filter(
+                    menu_items__product=item.product,
+                    menu_items__availability=True,
+                ))
+                suitable_restaurants = (suitable_restaurants & item_restaurants)
+            restaurants[order.id] = list(suitable_restaurants)
+        return restaurants
+
+    def annotate_orders_cost(self):
         return Order.objects.filter(status=RAW).annotate(
             order_cost=Sum(
                 F('order_items__quantity') * F('order_items__product_id__price')
@@ -150,8 +162,8 @@ PAYMENT_METHOD_CHOICES = [
     (ELECTRONIC, 'Электронно'),
 ]
 
-class Order(models.Model):
 
+class Order(models.Model):
     objects = ExtendedQuerySet.as_manager()
 
     firstname = models.CharField(
@@ -179,39 +191,53 @@ class Order(models.Model):
         blank=False,
         null=False,
     )
-    status = models.CharField('Статус',
-                              max_length=2,
-                              choices=STATUS_CHOICES,
-                              default=RAW,
-                              db_index=True
-                              )
-    comment = models.TextField('Комментарий',
-                               max_length=500,
-                               blank=True,
-                               null=True,
-                               default=''
-                               )
+    status = models.CharField(
+        'Статус',
+        max_length=2,
+        choices=STATUS_CHOICES,
+        default=RAW,
+        db_index=True
+    )
+    comment = models.TextField(
+        'Комментарий',
+        max_length=500,
+        blank=True,
+        null=True,
+        default=''
+    )
 
-    registration_date = models.DateTimeField('Зарегистрировано в',
-                                             auto_now_add=True,
-                                             db_index=True,
-                                             )
-    call_date = models.DateTimeField('Звонок в',
-                                     blank=True,
-                                     null=True,
-                                     db_index=True,
-                                     )
-    delivery_date = models.DateTimeField('Доставлено в',
-                                         blank=True,
-                                         null=True,
-                                         db_index=True,
-                                         )
-    payment_method = models.CharField('Способ оплаты',
-                                      max_length=2,
-                                      choices=PAYMENT_METHOD_CHOICES,
-                                      default=CASH,
-                                      db_index=True
-                                      )
+    registration_date = models.DateTimeField(
+        'Зарегистрировано в',
+        auto_now_add=True,
+        db_index=True,
+    )
+    call_date = models.DateTimeField(
+        'Звонок в',
+        blank=True,
+        null=True,
+        db_index=True,
+    )
+    delivery_date = models.DateTimeField(
+        'Доставлено в',
+        blank=True,
+        null=True,
+        db_index=True,
+    )
+    payment_method = models.CharField(
+        'Способ оплаты',
+        max_length=2,
+        choices=PAYMENT_METHOD_CHOICES,
+        default=CASH,
+        db_index=True
+    )
+    restaurant = models.ForeignKey(
+        Restaurant,
+        on_delete=models.SET_NULL,
+        related_name='order_restaurant',
+        verbose_name='Ресторан',
+        blank=True,
+        null=True,
+    )
 
     def add_product(self, id, quantity):
         product = Product.objects.get(id=id)
@@ -221,8 +247,6 @@ class Order(models.Model):
             price=product.price,
             order=self
         )
-
-
 
     class Meta:
         verbose_name = 'заказ'
@@ -269,4 +293,3 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name}"
-

@@ -131,7 +131,8 @@ class OrderAdmin(admin.ModelAdmin):
               'comment',
               'registration_date',
               'call_date',
-              'delivery_date'
+              'delivery_date',
+              'restaurant',
               ]
 
     readonly_fields = ['registration_date']

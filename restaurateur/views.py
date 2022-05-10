@@ -100,5 +100,6 @@ def view_restaurants(request):
 def view_orders(request):
     # TODO: проверить оптимальность запросов к бд
     return render(request, template_name='order_items.html', context={
-        'order_items': Order.objects.order_with_cost()
+        'orders': Order.objects.annotate_orders_cost(),
+        'suitable_restaurants': Order.objects.get_suitable_restaurants(),
     })
