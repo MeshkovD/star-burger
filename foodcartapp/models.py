@@ -1,9 +1,11 @@
-from datetime import timezone
-
+import requests
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.db.models import F, Sum
+from geopy import distance
 from phonenumber_field.modelfields import PhoneNumberField
+
+from star_burger import settings
 
 
 class Restaurant(models.Model):
@@ -125,23 +127,65 @@ class RestaurantMenuItem(models.Model):
         return f"{self.restaurant.name} - {self.product.name}"
 
 
+def fetch_coordinates(apikey, address):
+    base_url = "https://geocode-maps.yandex.ru/1.x"
+    response = requests.get(base_url, params={
+        "geocode": address,
+        "apikey": apikey,
+        "format": "json",
+    })
+    response.raise_for_status()
+    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+
+    if not found_places:
+        return None
+
+    most_relevant = found_places[0]
+    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    return lon, lat
+
+
 class ExtendedQuerySet(models.QuerySet):
-    def get_suitable_restaurants(self):
-        restaurants = {}
-        raw_orders = Order.objects.filter(status=RAW)
-        for order in raw_orders:
-            suitable_restaurants = set(Restaurant.objects.all())
-            for item in order.order_items.all():
-                item_restaurants = set(Restaurant.objects.filter(
-                    menu_items__product=item.product,
-                    menu_items__availability=True,
-                ))
-                suitable_restaurants = (suitable_restaurants & item_restaurants)
-            restaurants[order.id] = list(suitable_restaurants)
+    def _add_distance_to_restaurant(self, likely_restaurants, *order_coordinates):
+        restaurants = []
+
+        for restaurant in likely_restaurants:
+            try:
+                restaurant_lon, restaurant_lat = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, restaurant.address)
+            except:
+                restaurants.append({'name': str(restaurant) + ' - Ошибка определения координат, проверьте адрес ресторана',
+                                    'distance': float('inf'),
+                                    })
+                continue
+            distance_to_restaurant = distance.distance((order_coordinates), (restaurant_lat, restaurant_lon)).km
+            restaurants.append({'name': str(restaurant), 'distance': round(distance_to_restaurant, 3)})
         return restaurants
 
+    def get_suitable_restaurants(self):
+        suitable_restaurants = {}
+        raw_orders = Order.objects.filter(status=RAW).prefetch_related('order_items__product')
+        all_restaurants = Restaurant.objects.all()
+        for order in raw_orders:
+            try:
+                delivery_lon, delivery_lat = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, order.address)
+            except:
+                suitable_restaurants[order.id] = ["Не удалось установить координаты доставки, проверьте адрес заказа."]
+                continue
+
+            likely_restaurants = all_restaurants
+            for item in order.order_items.all():
+                likely_restaurants = likely_restaurants.filter(
+                    menu_items__product=item.product,
+                    menu_items__availability=True,
+                )
+            # координаты отправляются в обратном порядке, особенность работы geopy
+            restaurants_with_distance = self._add_distance_to_restaurant(likely_restaurants, delivery_lat, delivery_lon)
+            sorted_restaurants = sorted(restaurants_with_distance, key=lambda restaurant: restaurant["distance"], reverse=False)
+            suitable_restaurants[order.id] = [f'{restaurant["name"]}, {restaurant["distance"]} км.' for restaurant in sorted_restaurants]
+        return suitable_restaurants
+
     def annotate_orders_cost(self):
-        return Order.objects.filter(status=RAW).annotate(
+        return Order.objects.all().filter(status=RAW).annotate(
             order_cost=Sum(
                 F('order_items__quantity') * F('order_items__product_id__price')
             )
@@ -151,15 +195,15 @@ class ExtendedQuerySet(models.QuerySet):
 RAW = 'RW'
 PROCESSED = 'PR'
 STATUS_CHOICES = [
-    (RAW, 'Необработанный'),
-    (PROCESSED, 'Обработанный'),
+    (RAW, 'Необработ.'),
+    (PROCESSED, 'Обработ.'),
 ]
 
 CASH = 'CS'
 ELECTRONIC = 'EL'
 PAYMENT_METHOD_CHOICES = [
-    (CASH, 'Наличностью'),
-    (ELECTRONIC, 'Электронно'),
+    (CASH, 'Налич.'),
+    (ELECTRONIC, 'Элект.'),
 ]
 
 

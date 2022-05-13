@@ -21,6 +21,7 @@
       <th>Клиент</th>
       <th>Телефон</th>
       <th>Адрес доставки</th>
+      <th>Рестораны</th>
       <th>Комментарий</th>
       <th>Ссылка на админку</th>
     </tr>
@@ -33,15 +34,15 @@
       <td>{{ order.order_cost }} руб.</td>
       <td>{{ order.firstname }} {{ order.lastname }}</td>
       <td>{{ order.phonenumber }}</td>
+      <td> {{ order.address }}</td>
       <td>
         <details>
           <summary>
-            {{ order.address }}
+            Развернуть
           </summary>
-          Можно забрать из:<br>
           {% if suitable_restaurants|get:order.id %}
           {%for restaurant in suitable_restaurants|get:order.id %}
-          <li>{{ restaurant }}</li>
+          <nobr><li>{{ restaurant }}</li></nobr>
           {% endfor %}
           {% else %}
           <b>Нет подходящих ресторанов</b>
