@@ -12,10 +12,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
-SECRET_KEY = env('SECRET_KEY', 'etirgvonenrfnoerngorenogneongg334g')
-DEBUG = env.bool('DEBUG', True)
+SECRET_KEY = env.str('SECRET_KEY')
+DEBUG = env.str('DEBUG')
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS')
+
+YANDEX_GEOCODER_KEY = env.str('YANDEX_GEOCODER_KEY')
 
 INSTALLED_APPS = [
     'foodcartapp.apps.FoodcartappConfig',
