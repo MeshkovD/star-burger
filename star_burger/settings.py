@@ -22,6 +22,7 @@ YANDEX_GEOCODER_KEY = env.str('YANDEX_GEOCODER_KEY')
 INSTALLED_APPS = [
     'foodcartapp.apps.FoodcartappConfig',
     'restaurateur.apps.RestaurateurConfig',
+    'place.apps.PlaceConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
