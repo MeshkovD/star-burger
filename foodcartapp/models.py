@@ -4,6 +4,8 @@ import requests
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.db.models import F, Sum
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from geopy import distance
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -177,7 +179,7 @@ class ExtendedQuerySet(models.QuerySet):
 
     def get_suitable_restaurants(self):
         suitable_restaurants = {}
-        raw_orders = Order.objects.filter(status=RAW).prefetch_related('order_items__product')
+        raw_orders = Order.objects.exclude(status=PROCESSED).prefetch_related('order_items__product')
         all_restaurants = Restaurant.objects.all()
         for order in raw_orders:
             delivery_coordinates = self._get_or_create_place_coord(order.address)
@@ -203,17 +205,19 @@ class ExtendedQuerySet(models.QuerySet):
         return suitable_restaurants
 
     def annotate_orders_cost(self):
-        return Order.objects.all().filter(status=RAW).annotate(
+        return Order.objects.exclude(status=PROCESSED).order_by('-status').annotate(
             order_cost=Sum(
-                F('order_items__quantity') * F('order_items__product_id__price')
+                F('order_items__quantity') * F('order_items__price')
             )
         )
 
 
 RAW = 'RW'
+DURING = 'DR'
 PROCESSED = 'PR'
 STATUS_CHOICES = [
     (RAW, 'Необработ.'),
+    (DURING, 'Готовится'),
     (PROCESSED, 'Обработ.'),
 ]
 
@@ -355,3 +359,8 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name}"
+
+@receiver(pre_save, sender=Order)
+def my_callback(sender, instance, *args, **kwargs):
+    if instance.restaurant and instance.status != PROCESSED:
+        instance.status = DURING
