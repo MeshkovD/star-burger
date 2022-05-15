@@ -31,23 +31,30 @@
       <td>{{ order.id }}</td>
       <td>{{ order.get_status_display }}</td>
       <td>{{ order.get_payment_method_display }}</td>
-      <td>{{ order.order_cost }} руб.</td>
+      <td>{{ order.order_cost|floatformat:2 }} руб.</td>
       <td>{{ order.firstname }} {{ order.lastname }}</td>
       <td>{{ order.phonenumber }}</td>
       <td> {{ order.address }}</td>
       <td>
+        {% if order.restaurant %}
+        Готовит {{ order.restaurant }}
+        {% else %}
         <details>
           <summary>
             Развернуть
           </summary>
-          {% if suitable_restaurants|get:order.id %}
-          {%for restaurant in suitable_restaurants|get:order.id %}
-          <nobr><li>{{ restaurant }}</li></nobr>
-          {% endfor %}
-          {% else %}
-          <b>Нет подходящих ресторанов</b>
-          {% endif %}
+
+              {% if suitable_restaurants|get:order.id %}
+                  Может быть приготовлено в:
+                  {%for restaurant in suitable_restaurants|get:order.id %}
+                  <nobr><li>{{ restaurant }}</li></nobr>
+                  {% endfor %}
+              {% else %}
+                  <b>Нет подходящих ресторанов</b>
+              {% endif %}
         </details>
+        {% endif %}
+
       </td>
       <td>{{ order.comment }}</td>
       <td>
