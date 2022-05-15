@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.http import HttpResponseRedirect
 from django.shortcuts import reverse
@@ -116,8 +117,18 @@ class ProductAdmin(admin.ModelAdmin):
     pass
 
 
+class OrderAdminForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(OrderAdminForm, self).__init__(*args, **kwargs)
+        restaurants_with_distance = Order.objects.get_suitable_restaurants()[self.instance.id]
+        suitable_restaurants = Restaurant.objects.filter(name__in=[x.split(',')[0] for x in restaurants_with_distance])
+        self.fields['restaurant'].queryset = suitable_restaurants
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+
+    form = OrderAdminForm
 
     inlines = [
         OrderItemInline
