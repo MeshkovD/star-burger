@@ -233,27 +233,19 @@ class Order(models.Model):
     firstname = models.CharField(
         'Имя',
         max_length=100,
-        blank=False,
-        null=False,
     )
     lastname = models.CharField(
         'Фамилия',
         max_length=100,
         db_index=True,
-        blank=False,
-        null=False,
     )
     phonenumber = PhoneNumberField(
         'Телефон',
         db_index=True,
-        blank=False,
-        null=False,
     )
     address = models.CharField(
         'Адрес',
         max_length=100,
-        blank=False,
-        null=False,
     )
     status = models.CharField(
         'Статус',
@@ -328,29 +320,22 @@ class OrderItem(models.Model):
         related_name='order_items',
         verbose_name="заказ",
         on_delete=models.CASCADE,
-        blank=False,
-
     )
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
         related_name='product_order_item',
         verbose_name='продукт',
-        blank=False
     )
     quantity = models.IntegerField(
         'количество',
         validators=[MinValueValidator(0)],
-        blank=False,
-        null=False
     )
     price = models.DecimalField(
         'цена',
         max_digits=8,
         decimal_places=2,
         validators=[MinValueValidator(0)],
-        blank=False,
-        null=False
     )
 
     class Meta:
