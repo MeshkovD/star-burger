@@ -179,7 +179,7 @@ class ExtendedQuerySet(models.QuerySet):
 
     def get_suitable_restaurants(self):
         suitable_restaurants = {}
-        raw_orders = Order.objects.exclude(status=PROCESSED).prefetch_related('order_items__product')
+        raw_orders = Order.objects.exclude(status=Order.PROCESSED).prefetch_related('order_items__product')
         all_restaurants = Restaurant.objects.all()
         for order in raw_orders:
             delivery_coordinates = self._get_or_create_place_coord(order.address)
@@ -205,32 +205,30 @@ class ExtendedQuerySet(models.QuerySet):
         return suitable_restaurants
 
     def annotate_orders_cost(self):
-        return Order.objects.exclude(status=PROCESSED).order_by('-status').annotate(
+        return Order.objects.exclude(status=Order.PROCESSED).order_by('-status').annotate(
             order_cost=Sum(
                 F('order_items__quantity') * F('order_items__price')
             )
         )
 
 
-RAW = 'RW'
-DURING = 'DR'
-PROCESSED = 'PR'
-STATUS_CHOICES = [
-    (RAW, 'Необработ.'),
-    (DURING, 'Готовится'),
-    (PROCESSED, 'Обработ.'),
-]
-
-CASH = 'CS'
-ELECTRONIC = 'EL'
-PAYMENT_METHOD_CHOICES = [
-    (CASH, 'Налич.'),
-    (ELECTRONIC, 'Элект.'),
-]
 
 
 class Order(models.Model):
-    objects = ExtendedQuerySet.as_manager()
+    RAW = 'RW'
+    DURING = 'DR'
+    PROCESSED = 'PR'
+    STATUS_CHOICES = [
+        (RAW, 'Необработ.'),
+        (DURING, 'Готовится'),
+        (PROCESSED, 'Обработ.'),
+    ]
+    CASH = 'CS'
+    ELECTRONIC = 'EL'
+    PAYMENT_METHOD_CHOICES = [
+        (CASH, 'Налич.'),
+        (ELECTRONIC, 'Элект.'),
+    ]
 
     firstname = models.CharField(
         'Имя',
@@ -305,6 +303,15 @@ class Order(models.Model):
         null=True,
     )
 
+    objects = ExtendedQuerySet.as_manager()
+
+    class Meta:
+        verbose_name = 'заказ'
+        verbose_name_plural = 'заказы'
+
+    def __str__(self):
+        return f'Заказ #{self.id}'
+
     def add_product(self, id, quantity):
         product = Product.objects.get(id=id)
         OrderItem.objects.create(
@@ -313,13 +320,6 @@ class Order(models.Model):
             price=product.price,
             order=self
         )
-
-    class Meta:
-        verbose_name = 'заказ'
-        verbose_name_plural = 'заказы'
-
-    def __str__(self):
-        return f'Заказ #{self.id}'
 
 
 class OrderItem(models.Model):
@@ -362,5 +362,5 @@ class OrderItem(models.Model):
 
 @receiver(pre_save, sender=Order)
 def my_callback(sender, instance, *args, **kwargs):
-    if instance.restaurant and instance.status != PROCESSED:
-        instance.status = DURING
+    if instance.restaurant and instance.status != instance.PROCESSED:
+        instance.status = instance.DURING
