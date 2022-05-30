@@ -88,7 +88,6 @@ class Product(models.Model):
     )
     description = models.TextField(
         'описание',
-        max_length=1000,
         blank=True,
     )
 
@@ -256,7 +255,6 @@ class Order(models.Model):
     )
     comment = models.TextField(
         'Комментарий',
-        max_length=500,
         blank=True,
         null=True,
         default=''
