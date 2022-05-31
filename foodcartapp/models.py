@@ -178,7 +178,7 @@ class ExtendedQuerySet(models.QuerySet):
 
     def get_suitable_restaurants(self):
         suitable_restaurants = {}
-        raw_orders = Order.objects.exclude(status=Order.PROCESSED).prefetch_related('order_items__product')
+        raw_orders = Order.objects.exclude(status=Order.PROCESSED).prefetch_related('items__product')
         all_restaurants = Restaurant.objects.all()
         for order in raw_orders:
             delivery_coordinates = self._get_or_create_place_coord(order.address)
@@ -188,7 +188,7 @@ class ExtendedQuerySet(models.QuerySet):
                 continue
 
             likely_restaurants = all_restaurants
-            for item in order.order_items.all():
+            for item in order.items.all():
                 likely_restaurants = likely_restaurants.filter(
                     menu_items__product=item.product,
                     menu_items__availability=True,
@@ -206,7 +206,7 @@ class ExtendedQuerySet(models.QuerySet):
     def annotate_orders_cost(self):
         return Order.objects.exclude(status=Order.PROCESSED).order_by('-status').annotate(
             order_cost=Sum(
-                F('order_items__quantity') * F('order_items__price')
+                F('items__quantity') * F('items__price')
             )
         )
 
@@ -314,14 +314,14 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
-        related_name='order_items',
+        related_name='items',
         verbose_name="заказ",
         on_delete=models.CASCADE,
     )
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
-        related_name='product_order_item',
+        related_name='order_items',
         verbose_name='продукт',
     )
     quantity = models.IntegerField(
