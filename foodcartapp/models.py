@@ -281,7 +281,6 @@ class Order(models.Model):
         'Способ оплаты',
         max_length=2,
         choices=PAYMENT_METHOD_CHOICES,
-        default=CASH,
         db_index=True
     )
     restaurant = models.ForeignKey(
