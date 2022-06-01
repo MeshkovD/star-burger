@@ -119,10 +119,11 @@ class ProductAdmin(admin.ModelAdmin):
 
 class OrderAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        super(OrderAdminForm, self).__init__(*args, **kwargs)
-        restaurants_with_distance = Order.objects.get_suitable_restaurants()[self.instance.id]
-        suitable_restaurants = Restaurant.objects.filter(name__in=[x.split(',')[0] for x in restaurants_with_distance])
-        self.fields['restaurant'].queryset = suitable_restaurants
+        super().__init__(*args, **kwargs)
+        if self.instance.id:
+            restaurants_with_distance = Order.objects.get_suitable_restaurants()[self.instance.id]
+            suitable_restaurants = Restaurant.objects.filter(name__in=[x.split(',')[0] for x in restaurants_with_distance])
+            self.fields['restaurant'].queryset = suitable_restaurants
 
 
 @admin.register(Order)
@@ -149,7 +150,7 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = ['registration_date']
 
     def response_change(self, request, obj):
-        res = super(OrderAdmin, self).response_change(request, obj)
+        res = super().response_change(request, obj)
         if request.GET.get('next'):
             if url_has_allowed_host_and_scheme(request.GET['next'], settings.ALLOWED_HOSTS):
                 return HttpResponseRedirect(request.GET['next'])
