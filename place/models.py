@@ -40,6 +40,8 @@ class Place(models.Model):
 
 
 def fetch_coordinates(apikey, address):
+    if address == '""':
+        return None
     base_url = "https://geocode-maps.yandex.ru/1.x"
     response = requests.get(base_url, params={
         "geocode": address,
