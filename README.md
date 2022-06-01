@@ -58,14 +58,20 @@ pip install -r requirements.txt
 
 Примерное содержимое файла .env:
 ```sh
-
 SECRET_KEY='ikzt-5&i6x(9gg(d6n6e)0bv-5gox$3+shwfjq443dg45'
 YANDEX_GEOCODER_KEY='77z9c1a4-3a03-4k7c-8adf-epdf6c769905'
 DEBUG=false
 ALLOWED_HOSTS=127.0.0.1,localhost
 ```
+YANDEX_GEOCODER_KEY - Ключ API геокодера Яндекса, необходимо получить в [кабинете разработчика](https://developer.tech.yandex.ru/services/).
 
-Создайте файл базы данных SQLite и отмигрируйте её следующей командой:
+![Инструкция по получению клюача](https://dvmn.org/filer/canonical/1571923627/382/)
+Самые важные ответы на вопросы:
+- В открытом.
+- В бесплатном.
+- Буду отображать данные на карте.
+
+Далее создайте файл базы данных SQLite и отмигрируйте её следующей командой:
 
 ```sh
 python manage.py migrate
