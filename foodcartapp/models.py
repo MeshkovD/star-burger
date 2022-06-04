@@ -254,7 +254,6 @@ class Order(models.Model):
     comment = models.TextField(
         'Комментарий',
         blank=True,
-        default=''
     )
 
     registration_date = models.DateTimeField(
@@ -297,15 +296,6 @@ class Order(models.Model):
 
     def __str__(self):
         return f'Заказ #{self.id}'
-
-    def add_product(self, id, quantity):
-        product = Product.objects.get(id=id)
-        OrderItem.objects.create(
-            product=product,
-            quantity=quantity,
-            price=product.price,
-            order=self
-        )
 
 
 class OrderItem(models.Model):

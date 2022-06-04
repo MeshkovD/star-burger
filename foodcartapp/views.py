@@ -90,6 +90,12 @@ def register_order_api(request):
             address=serializer.validated_data['address'],
         )
         for product in serializer.validated_data['products']:
-            order.add_product(product['product'].id, product['quantity'])
+            OrderItem.objects.create(
+                product=product['product'],
+                quantity=product['quantity'],
+                price=product['product'].price,
+                order=order
+            )
+
     serializer = OrderSerializer(order)
     return Response(serializer.data)
