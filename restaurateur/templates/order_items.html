@@ -43,11 +43,14 @@
           <summary>
             Развернуть
           </summary>
-
               {% if suitable_restaurants|get:order.id %}
                   Может быть приготовлено в:
                   {%for restaurant in suitable_restaurants|get:order.id %}
-                  <nobr><li>{{ restaurant }}</li></nobr>
+                      {% if restaurant %}
+                          <nobr><li>{{ restaurant }}</li></nobr>
+                      {% else %}
+                          <b>Не удалось установить координаты доставки, проверьте адрес заказа.</b>
+                      {% endif %}
                   {% endfor %}
               {% else %}
                   <b>Нет подходящих ресторанов</b>

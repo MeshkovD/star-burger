@@ -165,8 +165,7 @@ class ExtendedQuerySet(models.QuerySet):
         for order in raw_orders:
             delivery_coordinates = self._get_or_create_place_coord(order.address)
             if None in delivery_coordinates:
-                suitable_restaurants[order.id] = ["Не удалось установить координаты доставки, "
-                                                  "проверьте адрес заказа."]
+                suitable_restaurants[order.id] = [None]
                 continue
 
             likely_restaurants = all_restaurants
