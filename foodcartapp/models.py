@@ -131,24 +131,6 @@ class RestaurantMenuItem(models.Model):
         return f"{self.restaurant.name} - {self.product.name}"
 
 
-# def fetch_coordinates(apikey, address):
-#     base_url = "https://geocode-maps.yandex.ru/1.x"
-#     response = requests.get(base_url, params={
-#         "geocode": address,
-#         "apikey": apikey,
-#         "format": "json",
-#     })
-#     response.raise_for_status()
-#     found_places = response.json()['response']['GeoObjectCollection']['featureMember']
-#
-#     if not found_places:
-#         return None
-#
-#     most_relevant = found_places[0]
-#     lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
-#     return lon, lat
-
-
 class ExtendedQuerySet(models.QuerySet):
     def _add_distance_to_restaurant(self, likely_restaurants, *order_coordinates):
         restaurants = []
@@ -204,11 +186,21 @@ class ExtendedQuerySet(models.QuerySet):
         return suitable_restaurants
 
     def annotate_orders_cost(self):
-        return Order.objects.exclude(status=Order.PROCESSED).order_by('-status').annotate(
+        return Order.objects.annotate(
             order_cost=Sum(
                 F('items__quantity') * F('items__price')
             )
         )
+
+    def get_prepared_orders_list(self):
+        unprocessed_orders = Order.objects.exclude(status=Order.PROCESSED)
+        annotated_orders = unprocessed_orders.annotate(
+            order_cost=Sum(
+                F('items__quantity') * F('items__price')
+            )
+        )
+        sorted_orders = annotated_orders.order_by('-status')
+        return sorted_orders
 
 
 class Order(models.Model):
