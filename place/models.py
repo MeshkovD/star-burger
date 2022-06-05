@@ -1,5 +1,9 @@
+import datetime
 import requests
+
+from django.conf import settings
 from django.db import models
+from geopy import distance
 
 
 class Place(models.Model):
@@ -57,3 +61,31 @@ def fetch_coordinates(apikey, address):
     most_relevant = found_places[0]
     lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
     return lon, lat
+
+
+def add_distance_to_restaurant(likely_restaurants, *order_coordinates):
+    restaurants = []
+
+    for restaurant in likely_restaurants:
+        restaurant_coordinates = get_or_create_place_coord(restaurant.address)
+        if None in restaurant_coordinates:
+            restaurants.append({'name': f'{str(restaurant)} - Ошибка определения координат, '
+                                        'проверьте адрес ресторана',
+                                'distance': float('inf'),
+                                })
+            continue
+        distance_to_restaurant = distance.distance((order_coordinates), restaurant_coordinates).km
+        restaurants.append({'name': str(restaurant), 'distance': round(distance_to_restaurant, 3)})
+    return restaurants
+
+
+def get_or_create_place_coord(address):
+        place, created = Place.objects.get_or_create(address=address)
+        if not place.lng or not place.lat:
+            try:
+                place.lng, place.lat = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, address)
+            except:
+                place.lng, place.lat = None, None
+            place.request_date = datetime.date.today()
+            place.save()
+        return place.lat, place.lng

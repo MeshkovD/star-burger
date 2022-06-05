@@ -1,16 +1,11 @@
-import datetime
-
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.db.models import F, Sum
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from geopy import distance
 from phonenumber_field.modelfields import PhoneNumberField
 
-from place.models import Place
-from place.models import fetch_coordinates
-from star_burger import settings
+from place.models import add_distance_to_restaurant, get_or_create_place_coord
 
 
 class Restaurant(models.Model):
@@ -132,38 +127,12 @@ class RestaurantMenuItem(models.Model):
 
 
 class ExtendedQuerySet(models.QuerySet):
-    def _add_distance_to_restaurant(self, likely_restaurants, *order_coordinates):
-        restaurants = []
-
-        for restaurant in likely_restaurants:
-            restaurant_coordinates = self._get_or_create_place_coord(restaurant.address)
-            if None in restaurant_coordinates:
-                restaurants.append({'name': f'{str(restaurant)} - Ошибка определения координат, '
-                                                              'проверьте адрес ресторана',
-                                    'distance': float('inf'),
-                                    })
-                continue
-            distance_to_restaurant = distance.distance((order_coordinates), restaurant_coordinates).km
-            restaurants.append({'name': str(restaurant), 'distance': round(distance_to_restaurant, 3)})
-        return restaurants
-
-    def _get_or_create_place_coord(self, address):
-        place, created = Place.objects.get_or_create(address=address)
-        if not place.lng or not place.lat:
-            try:
-                place.lng, place.lat = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, address)
-            except:
-                place.lng, place.lat = None, None
-            place.request_date = datetime.date.today()
-            place.save()
-        return place.lat, place.lng
-
     def get_suitable_restaurants(self):
         suitable_restaurants = {}
         raw_orders = Order.objects.exclude(status=Order.PROCESSED).prefetch_related('items__product')
         all_restaurants = Restaurant.objects.all()
         for order in raw_orders:
-            delivery_coordinates = self._get_or_create_place_coord(order.address)
+            delivery_coordinates = get_or_create_place_coord(order.address)
             if None in delivery_coordinates:
                 suitable_restaurants[order.id] = [None]
                 continue
@@ -174,7 +143,7 @@ class ExtendedQuerySet(models.QuerySet):
                     menu_items__product=item.product,
                     menu_items__availability=True,
                 )
-            restaurants_with_distance = self._add_distance_to_restaurant(likely_restaurants, delivery_coordinates)
+            restaurants_with_distance = add_distance_to_restaurant(delivery_coordinates)
             sorted_restaurants = sorted(
                 restaurants_with_distance,
                 key=lambda restaurant: restaurant["distance"],
