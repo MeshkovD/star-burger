@@ -288,8 +288,3 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name}"
-
-@receiver(pre_save, sender=Order)
-def my_callback(sender, instance, *args, **kwargs):
-    if instance.restaurant and instance.status != instance.PROCESSED:
-        instance.status = instance.DURING

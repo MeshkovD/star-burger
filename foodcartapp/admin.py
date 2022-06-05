@@ -156,3 +156,10 @@ class OrderAdmin(admin.ModelAdmin):
                 return HttpResponseRedirect(request.GET['next'])
         else:
             return res
+
+    def save_model(self, request, obj, form, change):
+        if 'restaurant' in form.changed_data:
+            if obj.status == obj.RAW:
+                obj.status = obj.DURING
+        super().save_model(request, obj, form, change)
+
