@@ -143,7 +143,7 @@ class ExtendedQuerySet(models.QuerySet):
                     menu_items__product=item.product,
                     menu_items__availability=True,
                 )
-            restaurants_with_distance = add_distance_to_restaurant(delivery_coordinates)
+            restaurants_with_distance = add_distance_to_restaurant(likely_restaurants, delivery_coordinates)
             sorted_restaurants = sorted(
                 restaurants_with_distance,
                 key=lambda restaurant: restaurant["distance"],
