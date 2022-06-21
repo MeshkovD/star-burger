@@ -122,8 +122,11 @@ class OrderAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance.id:
             restaurants_with_distance = Order.objects.get_suitable_restaurants()[self.instance.id]
-            suitable_restaurants = Restaurant.objects.filter(name__in=[x.split(',')[0] for x in restaurants_with_distance])
-            self.fields['restaurant'].queryset = suitable_restaurants
+            if restaurants_with_distance:
+                suitable_restaurants = Restaurant.objects.filter(name__in=[x.split(',')[0] for x in restaurants_with_distance])
+                self.fields['restaurant'].queryset = suitable_restaurants
+            else:
+                self.fields['restaurant'].queryset = Restaurant.objects.none()
 
 
 @admin.register(Order)

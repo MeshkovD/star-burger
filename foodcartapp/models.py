@@ -1,11 +1,9 @@
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import F, Sum
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
+from django.db.models import F, Sum, OuterRef, Subquery
 from phonenumber_field.modelfields import PhoneNumberField
 
-from place.models import add_distance_to_restaurant, get_or_create_place_coord
+from place.models import add_distance_to_restaurant, get_or_create_place_coord, Place
 
 
 class Restaurant(models.Model):
@@ -129,21 +127,36 @@ class RestaurantMenuItem(models.Model):
 class ExtendedQuerySet(models.QuerySet):
     def get_suitable_restaurants(self):
         suitable_restaurants = {}
-        raw_orders = Order.objects.exclude(status=Order.PROCESSED).prefetch_related('items__product')
-        all_restaurants = Restaurant.objects.all()
-        for order in raw_orders:
-            delivery_coordinates = get_or_create_place_coord(order.address)
-            if None in delivery_coordinates:
-                suitable_restaurants[order.id] = [None]
-                continue
+        places = Place.objects.filter(address=OuterRef('address'))
 
-            likely_restaurants = all_restaurants
+        raw_orders = Order.objects\
+            .exclude(status__in=[Order.PROCESSED, Order.DURING])\
+            .annotate(lat=Subquery(places.values('lat')),
+                      lng=Subquery(places.values('lng')))\
+            .prefetch_related('items__product')
+
+        all_restaurants = Restaurant.objects.prefetch_related('menu_items__product')
+        for order in raw_orders:
+            if None in (order.lat, order.lng):
+                order.lat, order.lng = get_or_create_place_coord(order.address)
+                if None in (order.lat, order.lng):
+                    suitable_restaurants[order.id] = None
+                    continue
+
+            order_products_ids = []
             for item in order.items.all():
-                likely_restaurants = likely_restaurants.filter(
-                    menu_items__product=item.product,
-                    menu_items__availability=True,
-                )
-            restaurants_with_distance = add_distance_to_restaurant(likely_restaurants, delivery_coordinates)
+                order_products_ids.append(item.product.id)
+
+            restaurants = []
+            for restaurant in all_restaurants:
+                restaurant_products_ids = []
+                for item in restaurant.menu_items.all():
+                    if item.availability:
+                        restaurant_products_ids.append(item.product.id)
+
+                if set(order_products_ids).issubset(restaurant_products_ids):
+                    restaurants.append(restaurant)
+            restaurants_with_distance = add_distance_to_restaurant(restaurants, (order.lat, order.lng))
             sorted_restaurants = sorted(
                 restaurants_with_distance,
                 key=lambda restaurant: restaurant["distance"],

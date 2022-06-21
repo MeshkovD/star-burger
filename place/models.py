@@ -88,4 +88,4 @@ def get_or_create_place_coord(address):
                 place.lng, place.lat = None, None
             place.request_date = datetime.date.today()
             place.save()
-        return place.lat, place.lng
+        return (place.lat, place.lng)
