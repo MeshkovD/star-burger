@@ -84,7 +84,7 @@ def get_or_create_place_coord(address):
         if not place.lng or not place.lat:
             try:
                 place.lng, place.lat = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, address)
-            except:
+            except TypeError:
                 place.lng, place.lat = None, None
             place.request_date = datetime.date.today()
             place.save()
