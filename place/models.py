@@ -81,7 +81,7 @@ def add_distance_to_restaurants(likely_restaurants, *order_coordinates):
 
 def get_or_create_place_coord(address):
         place, created = Place.objects.get_or_create(address=address)
-        if not place.lng or not place.lat:
+        if not any([place.lng, place.lat]):
             place.lng, place.lat = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, address)
             place.request_date = datetime.date.today()
             place.save()
