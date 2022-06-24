@@ -45,7 +45,7 @@ class Place(models.Model):
 
 def fetch_coordinates(apikey, address):
     if address == '""':
-        return None
+        return None, None
     base_url = "https://geocode-maps.yandex.ru/1.x"
     response = requests.get(base_url, params={
         "geocode": address,
@@ -56,7 +56,7 @@ def fetch_coordinates(apikey, address):
     found_places = response.json()['response']['GeoObjectCollection']['featureMember']
 
     if not found_places:
-        return None
+        return None, None
 
     most_relevant = found_places[0]
     lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
@@ -82,10 +82,7 @@ def add_distance_to_restaurants(likely_restaurants, *order_coordinates):
 def get_or_create_place_coord(address):
         place, created = Place.objects.get_or_create(address=address)
         if not place.lng or not place.lat:
-            try:
-                place.lng, place.lat = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, address)
-            except TypeError:
-                place.lng, place.lat = None, None
+            place.lng, place.lat = fetch_coordinates(settings.YANDEX_GEOCODER_KEY, address)
             place.request_date = datetime.date.today()
             place.save()
         return (place.lat, place.lng)
