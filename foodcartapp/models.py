@@ -252,11 +252,11 @@ class Order(models.Model):
         choices=PAYMENT_METHOD_CHOICES,
         db_index=True
     )
-    restaurant = models.ForeignKey(
+    cook_in = models.ForeignKey(
         Restaurant,
         on_delete=models.SET_NULL,
-        related_name='restaurant',
-        verbose_name='Ресторан',
+        related_name='cook_in',
+        verbose_name='Приготовить в',
         blank=True,
         null=True,
     )

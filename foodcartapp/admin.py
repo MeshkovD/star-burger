@@ -124,9 +124,9 @@ class OrderAdminForm(forms.ModelForm):
             restaurants_with_distance = Order.objects.get_suitable_restaurants()[self.instance.id]
             if restaurants_with_distance:
                 suitable_restaurants = Restaurant.objects.filter(name__in=[x.split(',')[0] for x in restaurants_with_distance])
-                self.fields['restaurant'].queryset = suitable_restaurants
+                self.fields['cook_in'].queryset = suitable_restaurants
             else:
-                self.fields['restaurant'].queryset = Restaurant.objects.none()
+                self.fields['cook_in'].queryset = Restaurant.objects.none()
 
 
 @admin.register(Order)
@@ -147,7 +147,7 @@ class OrderAdmin(admin.ModelAdmin):
               'registration_date',
               'call_date',
               'delivery_date',
-              'restaurant',
+              'cook_in',
               ]
 
     readonly_fields = ['registration_date']
