@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator
 from django.db.models import F, Sum, OuterRef, Subquery
 from phonenumber_field.modelfields import PhoneNumberField
 
-from place.models import add_distance_to_restaurant, get_or_create_place_coord, Place
+from place.models import add_distance_to_restaurants, get_or_create_place_coord, Place
 
 
 class Restaurant(models.Model):
@@ -156,7 +156,7 @@ class ExtendedQuerySet(models.QuerySet):
 
                 if set(order_products_ids).issubset(restaurant_products_ids):
                     restaurants.append(restaurant)
-            restaurants_with_distance = add_distance_to_restaurant(restaurants, (order.lat, order.lng))
+            restaurants_with_distance = add_distance_to_restaurants(restaurants, (order.lat, order.lng))
             sorted_restaurants = sorted(
                 restaurants_with_distance,
                 key=lambda restaurant: restaurant["distance"],

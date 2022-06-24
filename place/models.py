@@ -63,7 +63,7 @@ def fetch_coordinates(apikey, address):
     return lon, lat
 
 
-def add_distance_to_restaurant(likely_restaurants, *order_coordinates):
+def add_distance_to_restaurants(likely_restaurants, *order_coordinates):
     restaurants = []
 
     for restaurant in likely_restaurants:
