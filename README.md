@@ -63,6 +63,8 @@ YANDEX_GEOCODER_KEY='77z9c1a4-3a03-4k7c-8adf-epdf6c769905'
 DEBUG=false
 ALLOWED_HOSTS=127.0.0.1,localhost
 ```
+**Нестандартные переменные окруженя**:
+
 YANDEX_GEOCODER_KEY - Ключ API геокодера Яндекса, необходимо получить в [кабинете разработчика](https://developer.tech.yandex.ru/services/).
 
 ![Инструкция по получению клюача](https://dvmn.org/filer/canonical/1571923627/382/)
