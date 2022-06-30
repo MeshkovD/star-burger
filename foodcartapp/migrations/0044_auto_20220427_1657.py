@@ -4,11 +4,9 @@ from django.db import migrations
 
 def fill_price_field_in_order_items(apps, schema_editor):
     OrderItem = apps.get_model('foodcartapp', 'OrderItem')
-    for item in OrderItem.objects.all().iterator(chunk_size=1000):
-        product_price = item.product.price
-        if not item.price:
-            item.price = product_price
-            item.save()
+    for item in OrderItem.objects.filter(price__isnull=True).iterator(chunk_size=1000):
+        item.price = item.product.price
+        item.save()
 
 
 class Migration(migrations.Migration):
