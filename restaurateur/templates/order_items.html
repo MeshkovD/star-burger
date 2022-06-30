@@ -36,16 +36,16 @@
       <td>{{ order.phonenumber }}</td>
       <td> {{ order.address }}</td>
       <td>
-        {% if order.restaurant %}
-        Готовит {{ order.restaurant }}
+        {% if order.cook_in %}
+        Готовит {{ order.cook_in }}
         {% else %}
-        <details>
+        <details open>
           <summary>
             Развернуть
           </summary>
-              {% if suitable_restaurants|get:order.id %}
+              {% if order.suitable_restaurants %}
                   Может быть приготовлено в:
-                  {%for restaurant in suitable_restaurants|get:order.id %}
+                  {% for restaurant in order.suitable_restaurants %}
                       {% if restaurant %}
                           <nobr><li>{{ restaurant }}</li></nobr>
                       {% else %}

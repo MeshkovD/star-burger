@@ -63,20 +63,28 @@ def fetch_coordinates(apikey, address):
     return lon, lat
 
 
-def add_distance_to_restaurants(likely_restaurants, *order_coordinates):
+def add_distance_to_restaurants(suitable_restaurants, order):
+    if not any((order.lat, order.lng)):
+        order.lat, order.lng = get_or_create_place_coord(order.address)
+
     restaurants = []
 
-    for restaurant in likely_restaurants:
+    for restaurant in suitable_restaurants:
         restaurant_coordinates = get_or_create_place_coord(restaurant.address)
-        if None in restaurant_coordinates:
-            restaurants.append({'name': f'{str(restaurant)} - Ошибка определения координат, '
-                                        'проверьте адрес ресторана',
-                                'distance': float('inf'),
-                                })
+        if not any(restaurant_coordinates) or not any((order.lat, order.lng)):
+            restaurants.append({'name': f'{str(restaurant)} - Ошибка определения координат, ',
+                                    'distance': float('inf'),
+                                    })
             continue
-        distance_to_restaurant = distance.distance((order_coordinates), restaurant_coordinates).km
+        distance_to_restaurant = distance.distance((order.lat, order.lng), restaurant_coordinates).km
         restaurants.append({'name': str(restaurant), 'distance': round(distance_to_restaurant, 3)})
-    return restaurants
+    sorted_restaurants = sorted(
+        restaurants,
+        key=lambda restaurant: restaurant["distance"],
+        reverse=False
+    )
+    return [f'{restaurant["name"]}, {restaurant["distance"] if restaurant["distance"] !=float("inf") else "-" } км.'
+            for restaurant in sorted_restaurants]
 
 
 def get_or_create_place_coord(address):

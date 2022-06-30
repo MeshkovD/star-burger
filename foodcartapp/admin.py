@@ -121,12 +121,10 @@ class OrderAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.id:
-            restaurants_with_distance = Order.objects.get_suitable_restaurants()[self.instance.id]
-            if restaurants_with_distance:
-                suitable_restaurants = Restaurant.objects.filter(name__in=[x.split(',')[0] for x in restaurants_with_distance])
-                self.fields['cook_in'].queryset = suitable_restaurants
-            else:
-                self.fields['cook_in'].queryset = Restaurant.objects.none()
+            all_restaurants = Restaurant.objects.prefetch_related('menu_items__product')
+            self.fields['cook_in'].queryset = Order.objects.get_suitable_restaurants(self.instance, all_restaurants)
+        else:
+            self.fields['cook_in'].queryset = Restaurant.objects.none()
 
 
 @admin.register(Order)
@@ -161,8 +159,10 @@ class OrderAdmin(admin.ModelAdmin):
             return res
 
     def save_model(self, request, obj, form, change):
-        if 'restaurant' in form.changed_data:
+        if 'cook_in' in form.changed_data:
             if obj.status == obj.RAW:
                 obj.status = obj.DURING
+            elif not obj.cook_in:
+                obj.status = obj.RAW
         super().save_model(request, obj, form, change)
 

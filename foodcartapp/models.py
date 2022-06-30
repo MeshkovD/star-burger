@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator
 from django.db.models import F, Sum, OuterRef, Subquery
 from phonenumber_field.modelfields import PhoneNumberField
 
-from place.models import add_distance_to_restaurants, get_or_create_place_coord, Place
+from place.models import get_or_create_place_coord, Place, add_distance_to_restaurants
 
 
 class Restaurant(models.Model):
@@ -125,63 +125,41 @@ class RestaurantMenuItem(models.Model):
 
 
 class ExtendedQuerySet(models.QuerySet):
-    def get_suitable_restaurants(self):
-        suitable_restaurants = {}
-        places = Place.objects.filter(address=OuterRef('address'))
+    def get_suitable_restaurants(self, order, all_restaurants):
+        order_products_ids = [item.product.id for item in order.items.all()]
 
-        raw_orders = Order.objects\
-            .exclude(status__in=[Order.PROCESSED, Order.DURING])\
-            .annotate(lat=Subquery(places.values('lat')),
-                      lng=Subquery(places.values('lng')))\
-            .prefetch_related('items__product')
+        suitable_restaurants_ids = []
+        for restaurant in all_restaurants:
+            restaurant_products_ids = [item.product.id for item in restaurant.menu_items.all()]
 
-        all_restaurants = Restaurant.objects.prefetch_related('menu_items__product')
-        for order in raw_orders:
-            if None in (order.lat, order.lng):
-                order.lat, order.lng = get_or_create_place_coord(order.address)
-                if None in (order.lat, order.lng):
-                    suitable_restaurants[order.id] = None
-                    continue
-
-            order_products_ids = []
-            for item in order.items.all():
-                order_products_ids.append(item.product.id)
-
-            restaurants = []
-            for restaurant in all_restaurants:
-                restaurant_products_ids = []
-                for item in restaurant.menu_items.all():
-                    if item.availability:
-                        restaurant_products_ids.append(item.product.id)
-
-                if set(order_products_ids).issubset(restaurant_products_ids):
-                    restaurants.append(restaurant)
-            restaurants_with_distance = add_distance_to_restaurants(restaurants, (order.lat, order.lng))
-            sorted_restaurants = sorted(
-                restaurants_with_distance,
-                key=lambda restaurant: restaurant["distance"],
-                reverse=False
-            )
-            suitable_restaurants[order.id] = [f'{restaurant["name"]}, {restaurant["distance"]} км.'
-                                              for restaurant in sorted_restaurants]
+            if set(order_products_ids).issubset(restaurant_products_ids):
+                suitable_restaurants_ids.append(restaurant.id)
+        suitable_restaurants = all_restaurants.filter(id__in=suitable_restaurants_ids)
         return suitable_restaurants
 
-    def annotate_orders_cost(self):
-        return Order.objects.annotate(
-            order_cost=Sum(
-                F('items__quantity') * F('items__price')
-            )
-        )
+    def add_restaurants_info(self, orders):
+        all_restaurants = Restaurant.objects.prefetch_related('menu_items__product')
+        for order in orders:
+            suitable_restaurants = self.get_suitable_restaurants(order, all_restaurants)
+            restaurants_with_distance = add_distance_to_restaurants(suitable_restaurants, order)
+            order.suitable_restaurants = restaurants_with_distance
+        return orders
 
     def get_prepared_orders_list(self):
-        unprocessed_orders = Order.objects.exclude(status=Order.PROCESSED)
-        annotated_orders = unprocessed_orders.annotate(
+        unprocessed_orders = Order.objects.exclude(status=Order.PROCESSED).prefetch_related('items')
+        sorted_orders = unprocessed_orders.order_by('-status')
+
+        places = Place.objects.filter(address=OuterRef('address'))
+        annotated_orders = sorted_orders.annotate(
             order_cost=Sum(
                 F('items__quantity') * F('items__price')
-            )
+            ),
+            lat=Subquery(places.values('lat')),
+            lng=Subquery(places.values('lng'))
         )
-        sorted_orders = annotated_orders.order_by('-status')
-        return sorted_orders
+
+        orders_with_restaurants = self.add_restaurants_info(annotated_orders)
+        return orders_with_restaurants
 
 
 class Order(models.Model):
