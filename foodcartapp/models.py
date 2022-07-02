@@ -233,7 +233,7 @@ class Order(models.Model):
     cook_in = models.ForeignKey(
         Restaurant,
         on_delete=models.SET_NULL,
-        related_name='cook_in',
+        related_name='orders',
         verbose_name='Приготовить в',
         blank=True,
         null=True,
