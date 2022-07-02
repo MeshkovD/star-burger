@@ -137,29 +137,25 @@ class ExtendedQuerySet(models.QuerySet):
         suitable_restaurants = all_restaurants.filter(id__in=suitable_restaurants_ids)
         return suitable_restaurants
 
-    def add_restaurants_info(self, orders):
+    def add_restaurants_info(self):
         all_restaurants = Restaurant.objects.prefetch_related('menu_items__product')
-        for order in orders:
+        for order in self:
             suitable_restaurants = self.get_suitable_restaurants(order, all_restaurants)
             restaurants_with_distance = add_distance_to_restaurants(suitable_restaurants, order)
             order.suitable_restaurants = restaurants_with_distance
-        return orders
+        return self
 
     def get_prepared_orders_list(self):
-        unprocessed_orders = Order.objects.exclude(status=Order.PROCESSED).prefetch_related('items')
-        sorted_orders = unprocessed_orders.order_by('-status')
-
         places = Place.objects.filter(address=OuterRef('address'))
-        annotated_orders = sorted_orders.annotate(
-            order_cost=Sum(
-                F('items__quantity') * F('items__price')
-            ),
-            lat=Subquery(places.values('lat')),
-            lng=Subquery(places.values('lng'))
-        )
-
-        orders_with_restaurants = self.add_restaurants_info(annotated_orders)
-        return orders_with_restaurants
+        prepared_orders = self.exclude(status=Order.PROCESSED)\
+            .prefetch_related('items')\
+            .order_by('-status')\
+            .annotate(
+                order_cost=Sum(F('items__quantity') * F('items__price')),
+                lat=Subquery(places.values('lat')),
+                lng=Subquery(places.values('lng')))\
+            .add_restaurants_info()
+        return prepared_orders
 
 
 class Order(models.Model):
