@@ -1,9 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import F, Sum, OuterRef, Subquery
 from phonenumber_field.modelfields import PhoneNumberField
 
-from place.models import get_or_create_place_coord, Place, add_distance_to_restaurants
+from place.models import add_distance_to_restaurants
 
 
 class Restaurant(models.Model):
@@ -144,18 +143,6 @@ class ExtendedQuerySet(models.QuerySet):
             restaurants_with_distance = add_distance_to_restaurants(suitable_restaurants, order)
             order.suitable_restaurants = restaurants_with_distance
         return self
-
-    def get_prepared_orders_list(self):
-        places = Place.objects.filter(address=OuterRef('address'))
-        prepared_orders = self.exclude(status=Order.PROCESSED)\
-            .prefetch_related('items')\
-            .order_by('-status')\
-            .annotate(
-                order_cost=Sum(F('items__quantity') * F('items__price')),
-                lat=Subquery(places.values('lat')),
-                lng=Subquery(places.values('lng')))\
-            .add_restaurants_info()
-        return prepared_orders
 
 
 class Order(models.Model):

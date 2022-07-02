@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import OuterRef, Subquery, Sum, F
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -7,8 +8,8 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
-
 from foodcartapp.models import Product, Restaurant, Order
+from place.models import Place
 
 
 class Login(forms.Form):
@@ -71,7 +72,6 @@ def view_products(request):
     default_availability = {restaurant.id: False for restaurant in restaurants}
     products_with_restaurants = []
     for product in products:
-
         availability = {
             **default_availability,
             **{item.restaurant_id: item.availability for item in product.menu_items.all()},
@@ -97,6 +97,17 @@ def view_restaurants(request):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
+    places = Place.objects.filter(address=OuterRef('address'))
+
     return render(request, template_name='order_items.html', context={
-        'orders': Order.objects.get_prepared_orders_list(),
+        'orders': Order.objects
+                  .exclude(status=Order.PROCESSED)
+                  .prefetch_related('items')
+                  .order_by('-status')
+                  .annotate(
+                    order_cost=Sum(F('items__quantity') * F('items__price')),
+                    lat=Subquery(places.values('lat')),
+                    lng=Subquery(places.values('lng')),
+                  )
+                  .add_restaurants_info(),
     })
