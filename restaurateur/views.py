@@ -109,5 +109,5 @@ def view_orders(request):
                     lat=Subquery(places.values('lat')),
                     lng=Subquery(places.values('lng')),
                   )
-                  .add_restaurants_info(),
+                  .add_restaurants_with_distance(),
     })

@@ -136,7 +136,7 @@ class ExtendedQuerySet(models.QuerySet):
         suitable_restaurants = all_restaurants.filter(id__in=suitable_restaurants_ids)
         return suitable_restaurants
 
-    def add_restaurants_info(self):
+    def add_restaurants_with_distance(self):
         all_restaurants = Restaurant.objects.prefetch_related('menu_items__product')
         for order in self:
             suitable_restaurants = self.get_suitable_restaurants(order, all_restaurants)
