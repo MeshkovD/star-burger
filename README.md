@@ -59,11 +59,15 @@ pip install -r requirements.txt
 Примерное содержимое файла .env:
 ```sh
 SECRET_KEY='ikzt-5&i6x(9gg(d6n6e)0bv-5gox$3+shwfjq443dg45'
+ROLLBAR_ACCESS_TOKEN='d07c7136a23bfu2687937668e7t1a98d'
 YANDEX_GEOCODER_KEY='77z9c1a4-3a03-4k7c-8adf-epdf6c769905'
 DEBUG=false
 ALLOWED_HOSTS=127.0.0.1,localhost
 ```
 **Нестандартные переменные окруженя**:
+
+ROLLBAR_ACCESS_TOKEN - токен системы логирования Rollbar. Необходимо получить, на сайте [Rollbar](https://rollbar.com/).
+Когда речь зайдёт о SDK, выберите Django и следуйте инструкции по интеграции.
 
 YANDEX_GEOCODER_KEY - Ключ API геокодера Яндекса, необходимо получить в [кабинете разработчика](https://developer.tech.yandex.ru/services/).
 
@@ -161,13 +165,5 @@ Parcel будет следить за файлами в каталоге `bundle
 - `DEBUG` — дебаг-режим. Поставьте `False`.
 - `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте. Не стоит использовать значение по-умолчанию, **замените на своё**.
 - `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
+- `ROLLBAR_ACCESS_TOKEN` - токен системы логирования Rollbar. Необходимо получить, на сайте [Rollbar](https://rollbar.com/).
 - `YANDEX_GEOCODER_KEY` - Ключ API геокодера Яндекса, необходимо получить в [кабинете разработчика](https://developer.tech.yandex.ru/services/).
-
-
-## Цели проекта
-
-Код написан в учебных целях — это урок в курсе по Python и веб-разработке на сайте [Devman](https://dvmn.org). За основу был взят код проекта [FoodCart](https://github.com/Saibharath79/FoodCart).
-
-Где используется репозиторий:
-
-- Второй и третий урок [учебного модуля Django](https://dvmn.org/modules/django/)
