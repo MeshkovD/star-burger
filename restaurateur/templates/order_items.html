@@ -13,6 +13,7 @@
 <br/>
 <div class="container">
   <table class="table table-responsive">
+    <thead>
     <tr>
       <th>ID заказа</th>
       <th>Статус</th>
@@ -25,7 +26,8 @@
       <th>Комментарий</th>
       <th>Ссылка на админку</th>
     </tr>
-
+    </thead>
+    <tbody>
     {% for order in orders %}
     <tr>
       <td>{{ order.id }}</td>
@@ -68,6 +70,7 @@
       </td>
     </tr>
     {% endfor %}
+    </tbody>
   </table>
 </div>
 {% endblock %}

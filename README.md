@@ -59,12 +59,15 @@ pip install -r requirements.txt
 Примерное содержимое файла .env:
 ```sh
 SECRET_KEY='ikzt-5&i6x(9gg(d6n6e)0bv-5gox$3+shwfjq443dg45'
+DATABASE_URL='sqlite:///C:\django\star-burger\db.sqlite3'
+ALLOWED_HOSTS=127.0.0.1,localhost
+DEBUG=false
 ROLLBAR_ACCESS_TOKEN='d07c7136a23bfu2687937668e7t1a98d'
 YANDEX_GEOCODER_KEY='77z9c1a4-3a03-4k7c-8adf-epdf6c769905'
-DEBUG=false
-ALLOWED_HOSTS=127.0.0.1,localhost
 ```
 **Нестандартные переменные окруженя**:
+DATABASE_URL - настройки доступа к БД упакованные в URL с помощью библиотеки [dj-database-url](https://github.com/jazzband/dj-database-url#id8).
+Для быстрого запуска укажите путь к файлу БД sqlite3.
 
 ROLLBAR_ACCESS_TOKEN - токен системы логирования Rollbar. Необходимо получить, на сайте [Rollbar](https://rollbar.com/).
 Когда речь зайдёт о SDK, выберите Django и следуйте инструкции по интеграции.
@@ -164,6 +167,8 @@ Parcel будет следить за файлами в каталоге `bundle
 
 - `DEBUG` — дебаг-режим. Поставьте `False`.
 - `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте. Не стоит использовать значение по-умолчанию, **замените на своё**.
+- `DATABASE_URL` — настройки доступа к БД упакованные в URL с помощью библиотеки [dj-database-url](https://github.com/jazzband/dj-database-url#id8).
+   Пример для postgres: DATABASE_URL='postgres://db_user_name:db_password@host:port/db_name'
 - `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
-- `ROLLBAR_ACCESS_TOKEN` - токен системы логирования Rollbar. Необходимо получить, на сайте [Rollbar](https://rollbar.com/).
-- `YANDEX_GEOCODER_KEY` - Ключ API геокодера Яндекса, необходимо получить в [кабинете разработчика](https://developer.tech.yandex.ru/services/).
+- `ROLLBAR_ACCESS_TOKEN` — токен системы логирования Rollbar. Необходимо получить, на сайте [Rollbar](https://rollbar.com/).
+- `YANDEX_GEOCODER_KEY` — Ключ API геокодера Яндекса, необходимо получить в [кабинете разработчика](https://developer.tech.yandex.ru/services/).
